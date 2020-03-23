@@ -34,29 +34,97 @@ traversal_path = []
 room_map = {}
 
 visited = set()
-q = Queue()
-q.enqueue([player.current_room.id])
+
 
 while len(visited) < 500:
+    next_move = None
     visited.add(player.current_room.id)
 
-    possible_moves = list(room_map[player.current_room.id].keys())
-    possible_moves = [x for x in possible_moves if x not in visited]
+    previous_room = player.current_room.id
+
+    possible_moves = list(player.current_room.get_exits())
+
     for move in possible_moves:
-        if room_map[move]:
-            continue
-        else:
-            room_map[move] = '?'
-    next_room = random.choice(possible_moves)
+        if previous_room not in room_map.keys():
+            room_map[previous_room] = {}
+        try:
+            room_map[previous_room][move] != '?'
+        except KeyError:
+            room_map[previous_room][move] = '?'
+        
+    for move in possible_moves:
+        if room_map[previous_room][move] == '?':
+            next_move = move
 
-    path = q.dequeue()
-    
-    room_map[next_room] = path
+    if next_move != None:
 
-        for room in room_map[next_room]:
-            new_path = list(path)
-            new_path.append(room)
-            q.enqueue(new_path)
+        # next_move = random.choice(possible_moves)
+        traversal_path.append(next_move)
+        player.travel(next_move)
+        current_room = player.current_room.id
+        print(f"previous room: {previous_room}, direction: {next_move}, current room: {current_room}")
+        if next_move == 'n':
+            room_map[previous_room]['n'] = current_room
+            if current_room not in room_map.keys():
+                room_map[current_room] = {}
+            room_map[current_room]['s'] = previous_room
+        if next_move == 's':
+            room_map[previous_room]['s'] = current_room
+            if current_room not in room_map.keys():
+                room_map[current_room] = {}
+            room_map[current_room]['n'] = previous_room
+        if next_move == 'e':
+            room_map[previous_room]['e'] = current_room
+            if current_room not in room_map.keys():
+                room_map[current_room] = {}
+            room_map[current_room]['w'] = previous_room
+        if next_move == 'w':
+            room_map[previous_room]['w'] = current_room
+            if current_room not in room_map.keys():
+                room_map[current_room] = {}
+            room_map[current_room]['e'] = previous_room
+        print(f"previous room: {room_map[previous_room]} current room: {room_map[current_room]} visited: {len(visited)}")
+    else:
+        visited_just_now = set()
+        q = Queue()
+        p = Queue()
+        q.enqueue([player.current_room.id])
+        p.enqueue([player.current_room.id])
+        
+        while q.size() > 0:
+
+            rooms = q.dequeue()
+            path = p.dequeue()
+            print(path)
+            print(rooms)
+            current_node = rooms[-1]
+            print(f"current node {current_node}")
+            if '?' in list(room_map[current_node].values()):
+                # path.append(list(room_map[current_node].keys())[list(room_map[current_node].values()).index('?')])
+                print(path)
+                path.pop(0)
+                for move in path:
+                    player.travel(move)
+                    traversal_path.append(move)
+                    prev = move
+                    print(f"direction: {move} current room: {player.current_room.id}")
+                break
+            else:
+                if current_node not in visited_just_now:
+                    visited_just_now.add(current_node)
+                    edges = room_map[current_node].values()
+                for edge in edges:
+                    print(edge)
+                    new_rooms = list(rooms)
+                    new_path = list(path)
+                    new_rooms.append(edge)
+                    try:
+                        new_path.append(list(room_map[current_node].keys())[list(room_map[current_node].values()).index(edge)])
+                        p.enqueue(new_path)
+                    except ValueError:
+                        continue
+                    q.enqueue(new_rooms)
+                    
 
 
 
